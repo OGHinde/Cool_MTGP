@@ -292,7 +292,6 @@ def fit(X_tr_tens, Y_tr_tens, verbose=False, n_init=1, k_mode='rbf'):
             MT_models.append(modelt)
     
         MT_models, Joint_loss = optimizeMTGP(MT_models, MT_likelihood, verbose=verbose)
-        if Joint_loss < Joint_loss_best:
             #import ipdb; ipdb.set_trace()
             # WARNING: WE'RE GETTING RANDOM NANs
             print('Update model.')
@@ -302,6 +301,8 @@ def fit(X_tr_tens, Y_tr_tens, verbose=False, n_init=1, k_mode='rbf'):
         if verbose:
             print('\nBest loss ' + str(Joint_loss_best))
             print('Init loss ' + str(Joint_loss))
+
+        return VW, SigmaTT 
 
 def predict(Sigma, C, K_tr, K_tr_test, y_tr):
 
