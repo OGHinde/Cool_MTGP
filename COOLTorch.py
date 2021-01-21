@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import math
 import torch
@@ -7,91 +8,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 import warnings
 warnings.filterwarnings("ignore")
 
-# Define the wrapper to use the factorized MTGP over GPyTorch 
-class ExactGPModel(gpytorch.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood, num_t_1, kernel='Linear'):
-        super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
-        self.mean_module = gpytorch.means.ConstantMean()
-        #self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
-        if kernel=='Linear':
-            variance_prior = gpytorch.priors.GammaPrior(3.0, 6.0)
-            self.kernelX_module = gpytorch.kernels.LinearKernel(variance_prior =variance_prior, active_dims=range(train_x.shape[1]-num_t_1))
-            self.kernelX_module.variance = variance_prior.sample()
-        elif kernel=='RBF':
-            RBF_base = gpytorch.kernels.RBFKernel(active_dims=range(train_x.shape[1]-num_t_1))
-            self.kernelX_module = gpytorch.kernels.ScaleKernel(RBF_base)
-            # Kernel parameters are initialized later (before optimization) for all the task to be common
-
-            outputscale_prior = gpytorch.priors.GammaPrior(3.0,2.0)
-            self.kernelX_module.outputscale = outputscale_prior.sample()
-        else:
-            print('Unkown kernel type.')
-            sys.exit()
-            
-        
-        #v_constrains = gpytorch.constraints.Interval(lower_bound=1-np.finfo(float).eps, upper_bound=1+np.finfo(float).eps)
-        active_Y_1 = range(train_x.shape[1]-num_t_1,train_x.shape[1]) 
-        self.linear_kernelY_1_module = gpytorch.kernels.LinearKernel(active_dims=active_Y_1)#, variance_constraint=v_constrains)
-        self.linear_kernelY_1_module.variance = 1  # This parameter is no learnt
-        self.X = train_x
-        self.Y = train_y
-        self.num_t_1 = num_t_1
-        self.kernel = kernel
-
-
-        
-    def forward(self, x):
-        mean_x = self.mean_module(x)
-        covar_x = self.kernelX_module(x) + self.linear_kernelY_1_module(x)
-        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
-    
-    def getAmplitude(self):
-        if self.kernel=='Linear':
-            return self.kernelX_module.variance
-        elif self.kernel=='RBF':
-            return self.kernelX_module.outputscale
-
-    def getLengthscale(self):
-        if self.kernel == 'Linear':
-            print('Option not available for Linear kenrel.')
-            return None
-        elif self.kernel == 'RBF':
-            return self.kernelX_module.base_kernel.lengthscale.detach().numpy().item()
-    
-    def getNoise(self):
-        return self.likelihood.noise
-    
-    def getK(self):
-        x = self.X
-        K = (self.kernelX_module(x) + self.linear_kernelY_1_module(x)).evaluate()
-        K[np.diag_indices_from(K)] += self.getNoise()
-        return K
-    
-    def getK_X(self, Xtest=None):
-        x = self.X
-        num_t_1 = self.num_t_1
-        if self.kernel=='Linear':
-            K_X_module = copy.deepcopy(self.kernelX_module)
-            K_X_module.variance = 1 
-        elif self.kernel=='RBF':
-            K_X_module = copy.deepcopy(self.kernelX_module.base_kernel)
-
-        K_X_module = K_X_module.cuda() if (device.type != 'cpu') else K_X_module       
-        if Xtest == None:
-            return K_X_module(x).evaluate()
-        else:
-            return K_X_module(x,Xtest).evaluate()
-    
-    def getAlphas(self):
-        x = self.X
-        K = self.getK()
-        y = self.Y
-        #alphas, _ = torch.lstsq(y, K)
-        alphas = torch.mm(torch.inverse(K),y.unsqueeze(1))
-        return alphas
-
-
-# Some additional functions for the Cool-MTGP wrapper
+# Auxiliary functions for the Cool-MTGP wrapper.
 
 def optimizeMTGP(MT_models, MT_likelihood, verbose = True):
     smoke_test = ('CI' in os.environ)
@@ -264,30 +181,95 @@ def MT_Matrix(MT_models):
             SigmaTT[tt,tt] = NoiseValues[tt] + torch.mm(sigma_col, torch.transpose(wyt,0,1))
       
     return  VW, SigmaTT 
+
+# Define the wrapper to use the factorized MTGP over GPyTorch 
+class ExactGPModel(gpytorch.models.ExactGP):
+    def __init__(self, train_x, train_y, likelihood, num_t_1, kernel='Linear'):
+        super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ConstantMean()
+        #self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+        if kernel=='Linear':
+            variance_prior = gpytorch.priors.GammaPrior(3.0, 6.0)
+            self.kernelX_module = gpytorch.kernels.LinearKernel(variance_prior =variance_prior, active_dims=range(train_x.shape[1]-num_t_1))
+            self.kernelX_module.variance = variance_prior.sample()
+        elif kernel=='RBF':
+            RBF_base = gpytorch.kernels.RBFKernel(active_dims=range(train_x.shape[1]-num_t_1))
+            self.kernelX_module = gpytorch.kernels.ScaleKernel(RBF_base)
+            # Kernel parameters are initialized later (before optimization) for all the task to be common
+
+            outputscale_prior = gpytorch.priors.GammaPrior(3.0,2.0)
+            self.kernelX_module.outputscale = outputscale_prior.sample()
+        else:
+            print('Unkown kernel type.')
+            sys.exit()
+            
+        
+        #v_constrains = gpytorch.constraints.Interval(lower_bound=1-np.finfo(float).eps, upper_bound=1+np.finfo(float).eps)
+        active_Y_1 = range(train_x.shape[1]-num_t_1,train_x.shape[1]) 
+        self.linear_kernelY_1_module = gpytorch.kernels.LinearKernel(active_dims=active_Y_1)#, variance_constraint=v_constrains)
+        self.linear_kernelY_1_module.variance = 1  # This parameter is no learnt
+        self.X = train_x
+        self.Y = train_y
+        self.num_t_1 = num_t_1
+        self.kernel = kernel
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.kernelX_module(x) + self.linear_kernelY_1_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
     
-def predict_efficient(Sigma, C, K_tr, K_tr_test, y_tr):
+    def getAmplitude(self):
+        if self.kernel=='Linear':
+            return self.kernelX_module.variance
+        elif self.kernel=='RBF':
+            return self.kernelX_module.outputscale
 
-    N = K_tr.shape[0]
-    N_test = K_tr_test.shape[1]
+    def getLengthscale(self):
+        if self.kernel == 'Linear':
+            print('Option not available for Linear kenrel.')
+            return None
+        elif self.kernel == 'RBF':
+            return self.kernelX_module.base_kernel.lengthscale.detach().numpy().item()
+    
+    def getNoise(self):
+        return self.likelihood.noise
+    
+    def getK(self):
+        x = self.X
+        K = (self.kernelX_module(x) + self.linear_kernelY_1_module(x)).evaluate()
+        K[np.diag_indices_from(K)] += self.getNoise()
+        return K
+    
+    def getK_X(self, Xtest=None):
+        x = self.X
+        num_t_1 = self.num_t_1
+        if self.kernel=='Linear':
+            K_X_module = copy.deepcopy(self.kernelX_module)
+            K_X_module.variance = 1 
+        elif self.kernel=='RBF':
+            K_X_module = copy.deepcopy(self.kernelX_module.base_kernel)
 
-    u_sigma, s_sigma, _ = np.linalg.svd(Sigma)
-    aux1=(u_sigma*(np.divide(1,np.sqrt(s_sigma))))
-    C2 =aux1.T@ C @ aux1
-
-    u_C2, s_C2,_ = np.linalg.svd(C2)
-    u_K, s_K, _ = np.linalg.svd(K_tr)
-
-    s_C2_K = np.kron(s_C2, s_K)
-
-    y_tr2=(y_tr@u_sigma*np.divide(1,np.sqrt(s_sigma)))
-    vect_y_tr_hat = np.divide(1,s_C2_K+1)*(u_K.T@y_tr2@u_C2).T.ravel()
-    #m_star = np.kron(C,K_tr_test.T) @ ((u_K@vect_y_tr_hat.reshape((T,N)).T@u_C2.T@(u_sigma*np.divide(1,np.sqrt(s_sigma))).T).T.ravel())
-    m_star = (K_tr_test.T @(u_K@vect_y_tr_hat.reshape((T, N)).T@u_C2.T@(u_sigma*np.divide(1,np.sqrt(s_sigma))).T)@C).T.ravel()
-   
-    return m_star
+        K_X_module = K_X_module.cuda() if (device.type != 'cpu') else K_X_module       
+        if Xtest == None:
+            return K_X_module(x).evaluate()
+        else:
+            return K_X_module(x,Xtest).evaluate()
+    
+    def getAlphas(self):
+        x = self.X
+        K = self.getK()
+        y = self.Y
+        #alphas, _ = torch.lstsq(y, K)
+        alphas = torch.mm(torch.inverse(K),y.unsqueeze(1))
+        return alphas
 
 
-def fit():
+def fit(X_tr_tens, Y_tr_tens, verbose=False, n_init=1, k_mode='rbf'):
+    
+    if not torch.is_tensor(X_tr_tens) or not torch.is_tensor(Y_tr_tens):
+        print('Training data must be a pytorch tensor.')
+        sys.exit()
+
     Joint_loss_best = math.inf
     for n in range (n_init):
         # Define model and train T factorized models
@@ -320,3 +302,24 @@ def fit():
         if verbose:
             print('\nBest loss ' + str(Joint_loss_best))
             print('Init loss ' + str(Joint_loss))
+
+def predict(Sigma, C, K_tr, K_tr_test, y_tr):
+
+    N = K_tr.shape[0]
+    N_test = K_tr_test.shape[1]
+
+    u_sigma, s_sigma, _ = np.linalg.svd(Sigma)
+    aux1=(u_sigma*(np.divide(1,np.sqrt(s_sigma))))
+    C2 =aux1.T@ C @ aux1
+
+    u_C2, s_C2,_ = np.linalg.svd(C2)
+    u_K, s_K, _ = np.linalg.svd(K_tr)
+
+    s_C2_K = np.kron(s_C2, s_K)
+
+    y_tr2=(y_tr@u_sigma*np.divide(1,np.sqrt(s_sigma)))
+    vect_y_tr_hat = np.divide(1,s_C2_K+1)*(u_K.T@y_tr2@u_C2).T.ravel()
+    #m_star = np.kron(C,K_tr_test.T) @ ((u_K@vect_y_tr_hat.reshape((T,N)).T@u_C2.T@(u_sigma*np.divide(1,np.sqrt(s_sigma))).T).T.ravel())
+    m_star = (K_tr_test.T @(u_K@vect_y_tr_hat.reshape((T, N)).T@u_C2.T@(u_sigma*np.divide(1,np.sqrt(s_sigma))).T)@C).T.ravel()
+   
+    return m_star
