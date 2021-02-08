@@ -9,3 +9,5 @@ Authors:
 This repository provides libraries and code to use the model proposed in the original paper, as well as replicate most of the results.
 
 The repository is still very much a work in progress.
+
+For now, please check out the CoolMTGP_basic_demo and CoolMTGP_variance_demo notebooks, which showcase the model's basic functionalities.
