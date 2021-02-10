@@ -18,6 +18,6 @@ WHAT WORKS:
   - To run the real dataset experiments, execute the run_experiments_real_cooltorch.py script with the desired dataset name (eg. 'andro') and kernel type ('Linear' or 'RBF') as input arguments. The datasets included in the paper are: 'andro', 'atp1d', 'atp7d', 'edm', 'enb', 'oes10', 'oes97', 'scm1d', 'scm20d' and 'slump'.
 
 TO DO:
-  - The /lib/ folder needs to be cleaned and organised.
+  - The /lib/ folder needs to be thoroughly cleaned and organised.
   - The full pipeline for the synthetic experiments needs to be uploaded.
   - A user-friendly version for the PyTorch version of the model needs to be implemented.
