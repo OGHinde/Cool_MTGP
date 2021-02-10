@@ -15,7 +15,7 @@ The datasets in /datasets/real/ were downloaded from http://mulan.sourceforge.ne
 
 WHAT WORKS:
   - Please check out the CoolMTGP_basic_demo and CoolMTGP_variance_demo notebooks, which showcase the model's basic functionalities.
-  - To run the real dataset experiments, execute the run_experiments_real_cooltorch.py script with the desired dataset name (eg. 'andro') and kernel type ('Linear' or 'RBF') as input arguments.
+  - To run the real dataset experiments, execute the run_experiments_real_cooltorch.py script with the desired dataset name (eg. 'andro') and kernel type ('Linear' or 'RBF') as input arguments. The datasets included in the paper are: 'andro', 'atp1d', 'atp7d', 'edm', 'enb', 'oes10', 'oes97', 'scm1d', 'scm20d' and 'slump'.
 
 TO DO:
   - The /lib/ folder needs to be cleaned and organised.
