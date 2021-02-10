@@ -14,8 +14,8 @@ The repository is still very much a work in progress.
 The datasets in /datasets/real/ were downloaded from http://mulan.sourceforge.net/datasets-mtr.html
 
 WHAT WORKS:
-*Please check out the CoolMTGP_basic_demo and CoolMTGP_variance_demo notebooks, which showcase the model's basic functionalities.
-*To run the real dataset experiments, simply execute the run_experiments_real_cooltorch.py script with the dataset name (eg. 'andro') and kernel type ('Linear'       or 'RBF) as input arguments.
+  - Please check out the CoolMTGP_basic_demo and CoolMTGP_variance_demo notebooks, which showcase the model's basic functionalities.
+  - To run the real dataset experiments, simply execute the run_experiments_real_cooltorch.py script with the desired dataset name (eg. 'andro') and kernel type ('Linear' or 'RBF) as input arguments.
 
 TO DO:
   - The /lib/ folder needs to be cleaned and organised.
