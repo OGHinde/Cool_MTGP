@@ -493,15 +493,9 @@ print('\nRunning tests:')
 rmse_base = []
 rmse_bonilla = []
 rmse_MTGP = []
-rmse_norm_base = []
-rmse_norm_bonilla = []
-rmse_norm_MTGP = []
 r2_base = []
 r2_bonilla = []
 r2_MTGP = []
-mape_base = []
-mape_bonilla = []
-mape_MTGP = []
 
 if k_mode == 'RBF':
     indep_lengthscale = np.empty((n_iters, ))
@@ -564,23 +558,16 @@ for i in range(n_iters):
                 Y_pred_base = scaler_Y.inverse_transform(Y_pred_base_norm)
                 
                 rmse = RMSE(Y_tst, Y_pred_base)
-                rmse_norm = RMSE_NORM(Y_tst, Y_pred_base)
                 r2 = R2(Y_tst, Y_pred_base)
-                mape = MAPE(Y_tst, Y_pred_base)
             else:
                 rmse = RMSE(Y_tst_norm, Y_pred_base_norm)
-                rmse_norm = RMSE_NORM(Y_tst, Y_pred_base_norm)
                 r2 = R2(Y_tst_norm, Y_pred_base_norm)
-                mape = MAPE(Y_tst_norm, Y_pred_base_norm)
-
+            
             rmse_base.append(rmse)
             rmse_norm_base.append(rmse_norm)
             r2_base.append(r2)
-            mape_base.append(mape)
             print(f'RMSE = {rmse}')
-            print(f'RMSE normalized = {rmse_norm}')
             print(f'R2 = {r2}')
-            print(f'MAPE = {mape}')
     
     if train_bonilla:
         # BONILLA MODEL
@@ -644,22 +631,14 @@ for i in range(n_iters):
                 Y_pred_kron = scaler_Y.inverse_transform(Y_pred_kron_norm)
 
                 rmse = RMSE(Y_tst, Y_pred_kron)
-                rmse_norm = RMSE_NORM(Y_tst, Y_pred_kron)
                 r2 = R2(Y_tst, Y_pred_kron)
-                mape = MAPE(Y_tst, Y_pred_kron)
             else:
                 rmse = RMSE(Y_tst_norm, Y_pred_kron_norm)
-                rmse_norm = RMSE_NORM(Y_tst, Y_pred_kron_norm)
                 r2 = R2(Y_tst_norm, Y_pred_kron_norm)
-                mape = MAPE(Y_tst_norm, Y_pred_kron_norm)
             rmse_bonilla.append(rmse)
-            rmse_norm_bonilla.append(rmse_norm) 
             r2_bonilla.append(r2)
-            mape_bonilla.append(mape)
             print(f'RMSE = {rmse}')
-            print(f'RMSE normalized = {rmse_norm}')
             print(f'R2 = {r2}')
-            print(f'MAPE = {mape}')
         
     if train_MTGP:
         # CHAIN RULE MULTITASK GP MODEL
@@ -724,23 +703,15 @@ for i in range(n_iters):
                 Y_pred_MTGP = scaler_Y.inverse_transform(Y_pred_MTGP_norm)
 
                 rmse = RMSE(Y_tst, Y_pred_MTGP)
-                rmse_norm = RMSE_NORM(Y_tst, Y_pred_MTGP)
                 r2 = R2(Y_tst, Y_pred_MTGP)
-                mape = MAPE(Y_tst, Y_pred_MTGP)
             else:
                 rmse = RMSE(Y_tst_norm, Y_pred_MTGP_norm)
-                rmse_norm = RMSE_NORM(Y_tst, Y_pred_MTGP_norm)
                 r2 = R2(Y_tst_norm, Y_pred_MTGP_norm)
-                mape = MAPE(Y_tst_norm, Y_pred_MTGP_norm)
             
             rmse_MTGP.append(rmse)
-            rmse_norm_MTGP.append(rmse_norm)
             r2_MTGP.append(r2)
-            mape_MTGP.append(mape)
             print(f'RMSE = {rmse}')
-            print(f'RMSE normalized = {rmse_norm}')
             print(f'R2 = {r2}')
-            print(f'MAPE = {mape}')
 
 print('\nBenchmarks concluded.')
 # Result summary
@@ -756,10 +727,6 @@ if train_base:
         print('   - Standard deviation = {}'.format(np.std(r2_base)))
         print('   - Average RMSE = {}'.format(np.mean(rmse_base)))
         print('   - Standard deviation = {}'.format(np.std(rmse_base)))
-        print('   - Average RMSE normalized = {}'.format(np.mean(rmse_norm_base)))
-        print('   - Standard deviation = {}'.format(np.std(rmse_norm_base)))
-        print('   - Average MAPE = {}'.format(np.mean(mape_base)))
-        print('   - Standard deviation = {}'.format(np.std(mape_base)))
 
         results = {}
         if k_mode == 'RBF':
@@ -767,15 +734,9 @@ if train_base:
         results['rmse_stack'] = rmse_base
         results['rmse_mean'] = np.mean(rmse_base)
         results['rmse_std'] = np.std(rmse_base)
-        results['rmse_normalized_stack'] = rmse_norm_base
-        results['rmse_normalized_mean'] = np.mean(rmse_norm_base)
-        results['rmse_normalized_std'] = np.std(rmse_norm_base)
         results['r2_stack'] = r2_base
         results['r2_mean'] = np.mean(r2_base)
         results['r2_std'] = np.std(r2_base)
-        results['mape_stack'] = mape_base
-        results['mape_mean'] = np.mean(mape_base)
-        results['mape_std'] = np.std(mape_base)
         with open(path_base, 'w') as f:
             json.dump(results, f, sort_keys=False, indent=4)
 if train_bonilla:
@@ -790,10 +751,6 @@ if train_bonilla:
         print('   - Standard deviation = {}'.format(np.std(r2_bonilla)))
         print('   - Average RMSE = {}'.format(np.mean(rmse_bonilla)))
         print('   - Standard deviation = {}'.format(np.std(rmse_bonilla)))
-        print('   - Average RMSE normalized = {}'.format(np.mean(rmse_norm_bonilla)))
-        print('   - Standard deviation = {}'.format(np.std(rmse_norm_bonilla)))
-        print('   - Average MAPE = {}'.format(np.mean(mape_bonilla)))
-        print('   - Standard deviation = {}'.format(np.std(mape_bonilla)))
 
         results = {}
         if k_mode == 'RBF':
@@ -802,15 +759,9 @@ if train_bonilla:
         results['rmse_stack'] = rmse_bonilla
         results['rmse_mean'] = np.mean(rmse_bonilla)
         results['rmse_std'] = np.std(rmse_bonilla)
-        results['rmse_normalized_stack'] = rmse_norm_bonilla
-        results['rmse_normalized_mean'] = np.mean(rmse_norm_bonilla)
-        results['rmse_normalized_std'] = np.std(rmse_norm_bonilla)
         results['r2_stack'] = r2_bonilla
         results['r2_mean'] = np.mean(r2_bonilla)
         results['r2_std'] = np.std(r2_bonilla)
-        results['mape_stack'] = mape_bonilla
-        results['mape_mean'] = np.mean(mape_bonilla)
-        results['mape_std'] = np.std(mape_bonilla)
         with open(path_bonilla, 'w') as f:
             json.dump(results, f, sort_keys=False, indent=4)
 if train_MTGP:
@@ -825,11 +776,6 @@ if train_MTGP:
         print('   - Standard deviation = {}'.format(np.std(r2_MTGP)))
         print('   - Average RMSE = {}'.format(np.mean(rmse_MTGP)))
         print('   - Standard deviation = {}'.format(np.std(rmse_MTGP)))
-        print('   - Average RMSE normalized = {}'.format(np.mean(rmse_norm_MTGP)))
-        print('   - Standard deviation = {}'.format(np.std(rmse_norm_MTGP)))
-        print('   - Average MAPE = {}'.format(np.mean(mape_MTGP)))
-        print('   - Standard deviation = {}'.format(np.std(mape_MTGP)))
-
 
         results = {}
         if k_mode == 'RBF':
@@ -837,15 +783,9 @@ if train_MTGP:
         results['rmse_stack'] = rmse_MTGP
         results['rmse_mean'] = np.mean(rmse_MTGP)
         results['rmse_std'] = np.std(rmse_MTGP)
-        results['rmse_normalized_stack'] = rmse_norm_MTGP
-        results['rmse_normalized_mean'] = np.mean(rmse_norm_MTGP)
-        results['rmse_normalized_std'] = np.std(rmse_norm_MTGP)
         results['r2_stack'] = r2_MTGP
         results['r2_mean'] = np.mean(r2_MTGP)
         results['r2_std'] = np.std(r2_MTGP)
-        results['mape_stack'] = mape_MTGP
-        results['mape_mean'] = np.mean(mape_MTGP)
-        results['mape_std'] = np.std(mape_MTGP)
         with open(path_MTGP, 'w') as f:
             json.dump(results, f, sort_keys=False, indent=4)
 
