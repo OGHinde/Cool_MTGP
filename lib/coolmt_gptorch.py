@@ -27,7 +27,7 @@ class ExactGPModel(gpytorch.models.ExactGP):
             RBF_base = gpytorch.kernels.RBFKernel(active_dims=range(train_x.shape[1]-num_t_1))
             self.kernelX_module = gpytorch.kernels.ScaleKernel(RBF_base)
             # Kernel parameters are initialized later (before optimization) for all the task to be common
-            outputscale_prior = gpytorch.priors.GammaPrior(3.0,2.0)
+            outputscale_prior = gpytorch.priors.GammaPrior(3.0, 6.0)
             self.kernelX_module.outputscale = outputscale_prior.sample()
         else:
             print('Unkown kernel type.')
@@ -163,7 +163,7 @@ class Cool_MTGP():
     
             for t in range(self.n_tasks):
                 if MT_models[t].kernel=='RBF':
-                    MT_models[t].kernelX_module.base_kernel.raw_lengthscale.grad = joint_grad/T
+                    MT_models[t].kernelX_module.base_kernel.raw_lengthscale.grad = joint_grad/self.n_tasks
                 
                 MT_optimizer[t].step()
                 if verbose:
@@ -340,7 +340,7 @@ class Cool_MTGP():
         vect_y_tr_hat = np.divide(1, s_C2_K + 1) * (u_K.T @ y_tr2 @ u_C2).T.ravel()
         #m_star = np.kron(C,K_tr_test.T) @ ((u_K@vect_y_tr_hat.reshape((T,N)).T@u_C2.T@(u_sigma*np.divide(1,np.sqrt(s_sigma))).T).T.ravel())
         m_star = (K_tr_test.T @ (u_K @ vect_y_tr_hat.reshape((self.n_tasks, N)).T @ u_C2.T @ (u_sigma * np.divide(1, np.sqrt(s_sigma))).T) @ self.C_tt_).T.ravel()
-        m_star = np.reshape(m_star, (N_test, self.n_tasks))
+        m_star = np.reshape(m_star, (N_test, self.n_tasks), order='F')
 
         covariance_data = {}
         if conf_intervals:
